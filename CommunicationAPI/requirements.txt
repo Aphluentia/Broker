@@ -1,0 +1,8 @@
+# Base FastAPI
+fastapi[all]
+uvicorn[standard]
+
+# Linting and Formatting 
+black
+flake8
+isort
