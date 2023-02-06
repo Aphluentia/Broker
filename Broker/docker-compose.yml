@@ -1,34 +1,62 @@
-version: '3'
+
+version: '2'
 services:
-  zookeeper1:
-    image: wurstmeister/zookeeper
-    ports:
-      - "8005:2181"
-  zookeeper2:
-    image: wurstmeister/zookeeper
-    ports:
-      - "8006:2181"
-  kafka1:
-    image: wurstmeister/kafka
-    ports:
-      - "8007"
+  zookeeper-1:
+    image: confluentinc/cp-zookeeper:latest
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: 89.114.83.106
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper1:2181,zookeeper2:2181
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+
+  zookeeper-2:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 32181:2181
+  
+  kafka-1:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+
+    ports:
+      - 8005:8005
+    environment:
       KAFKA_BROKER_ID: 1
-  kafka2:
-    image: wurstmeister/kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://192.168.1.211:8005
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  kafka-2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
     ports:
-      - "8008"
+      - 8006:8006
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: 89.114.83.106
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper1:2181,zookeeper2:2181
       KAFKA_BROKER_ID: 2
-  kafka3:
-    image: wurstmeister/kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://192.168.1.211:8006
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  kafka-3:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
     ports:
-      - "8009"
+      - 8007:8007
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: 89.114.83.106
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper1:2181,zookeeper2:2181
       KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092,PLAINTEXT_HOST://192.168.1.211:8007
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1

@@ -12,20 +12,15 @@ def on_message(message):
     else:
         print(f"Received message: key={message.key()}, value={message.value()}")
 
-# Set up the Kafka Consumer to connect to the remote broker and consume from a topic
+# Set up the Kafka Consumer to connect to the broker and consume from a topic
 conf = {
-    "bootstrap.servers": "89.114.83.106:85,89.114.83.106:86",
+    "bootstrap.servers": "192.168.1.211:8005, 192.168.1.211:8006",
     "group.id": "my-group",
-    "auto.offset.reset": "earliest",
-    "security.protocol": "plaintext",
-    "api.version.request": "true",
-    "api.version.request.timeout.ms": 5000,
-    "api.version.fallback.ms": 5000,
-    "broker.version.fallback": "0.10.0.0"
+    "auto.offset.reset": "earliest"
 }
 
 consumer = Consumer(conf)
-consumer.subscribe(["my-topic"])
+consumer.subscribe(["my_topic"])
 
 # Continuously poll for incoming messages
 while True:
