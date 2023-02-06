@@ -14,7 +14,7 @@ def on_message(message):
 
 # Set up the Kafka Consumer to connect to the broker and consume from a topic
 conf = {
-    "bootstrap.servers": "192.168.1.211:8005, 192.168.1.211:8006",
+    "bootstrap.servers": " 89.114.83.106:85, 89.114.83.106:86, 89.114.83.106:87",
     "group.id": "my-group",
     "auto.offset.reset": "earliest"
 }
