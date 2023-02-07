@@ -147,6 +147,37 @@ async def broker_pair_accept(
         raise HTTPException(status_code=500, detail=ex.args[0].str())
 
 
+@app.get(
+    "/pair/disconnect/{aphluentiaUserId}/{appType}",
+    tags=["Pair"],
+    response_model=PairResponse,
+)
+async def broker_pair_dc(
+    aphluentiaUserId: str, appType: str, request: Request
+):
+    add_log(
+        event=f"GET: Disconnect Pairing {aphluentiaUserId} and {appType}",
+        client=request.client,
+    )
+
+    try:
+        await producer.publish(
+            f"{aphluentiaUserId}_{appType}",
+            "Pairing",
+            "DISCONNECT",
+        )
+        client.delete_topics([f"{aphluentiaUserId}_{appType}"])
+
+        return PairResponse(
+            Topic=f"{aphluentiaUserId}_{appType}",
+            WebPlatform=aphluentiaUserId,
+            Application=appType,
+            Action="DISCONNECT",
+        )
+    except KafkaException as ex:
+        raise HTTPException(status_code=500, detail=ex.args[0].str())
+
+
 ############################################################################
 # Topics ###################################################################
 
