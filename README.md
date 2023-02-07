@@ -18,4 +18,4 @@ Two main folders:
 		- Topics: broker topic management (listing and deletion)     
 	- Dockerfile to start the api in a docker container commsApi at port 8008  
 	- Makefile to start, stop and remove container  
-	- Deployed at 89.114.83.106 and available at port 88,  [Swagger](http://89.114.83.106/88/docs) (!Unsecure Connection)
+	- Deployed at 89.114.83.106 and available at port 88,  [Swagger](http://89.114.83.106:88/docs) (!Unsecure Connection)
