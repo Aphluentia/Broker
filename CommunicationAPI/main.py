@@ -4,12 +4,15 @@ from datetime import datetime
 from typing import Optional
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 
+from KafkaProducer import KafkaException, KafkaProducer
 from models import ApiLog, HeartBeat
 
 app = FastAPI()
-
+producer = KafkaProducer(
+    "192.168.1.211:8005, 192.168.1.211:8006, 192.168.1.211:8007"
+)
 # Logs #####################################################################
 LOGS_FILE = "logs.txt"
 
@@ -51,6 +54,42 @@ async def logs(request: Request):
         return logs
 
 
+# Pairing ##################################################################
+
+
+@app.get("/broker/pair/{aphluentiaUserId}/{appType}")
+async def broker_pair(aphluentiaUserId: str, appType: str, request: Request):
+    add_log(
+        event=f"GET: Pairing User {aphluentiaUserId} and {appType}",
+        client=request.client,
+    )
+
+    try:
+        await producer.publish(
+            f"{aphluentiaUserId}_{appType}",
+            f"{aphluentiaUserId}:{appType}",
+            "Pairing",
+        )
+        return {"timestamp": time.time()}
+    except KafkaException as ex:
+        raise HTTPException(status_code=500, detail=ex.args[0].str())
+
+
+@app.get("/broker/topics")
+async def get_topics(request: Request):
+    add_log(
+        event=f"GET: Broker Topics",
+        client=request.client,
+    )
+
+    try:
+        topics = await producer.get_topics()
+        return topics
+    except KafkaException as ex:
+        raise HTTPException(status_code=500, detail=ex.args[0].str())
+
+
+############################################################################
 if __name__ == "__main__":
     add_log(event="App Startup")
     uvicorn.run(app, host="0.0.0.0", port=8008)

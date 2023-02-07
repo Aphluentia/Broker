@@ -20,7 +20,7 @@ conf = {
 }
 
 consumer = Consumer(conf)
-consumer.subscribe(["my_topic"])
+consumer.subscribe(["aph1_app"])
 
 # Continuously poll for incoming messages
 while True:
