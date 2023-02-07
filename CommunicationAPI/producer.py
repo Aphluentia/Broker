@@ -2,7 +2,6 @@ import asyncio
 from typing import Optional
 
 from confluent_kafka import KafkaException, Producer
-from confluent_kafka.admin import AdminClient
 
 
 class KafkaProducer:
