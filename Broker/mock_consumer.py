@@ -14,13 +14,13 @@ def on_message(message):
 
 # Set up the Kafka Consumer to connect to the broker and consume from a topic
 conf = {
-    "bootstrap.servers": " 89.114.83.106:85, 89.114.83.106:86, 89.114.83.106:87",
-    "group.id": "my-group",
+    "bootstrap.servers": "89.114.83.106:85, 89.114.83.106:86, 89.114.83.106:87",
+    "group.id": "app22",
     "auto.offset.reset": "earliest"
 }
 
 consumer = Consumer(conf)
-consumer.subscribe(["my_topic"])
+consumer.subscribe(["aph1_app"])
 
 # Continuously poll for incoming messages
 while True:

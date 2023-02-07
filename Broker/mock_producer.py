@@ -2,7 +2,7 @@ from confluent_kafka import Producer
 
 # Define the configuration options for the Kafka producer
 conf = {
-    'bootstrap.servers': '89.114.83.106:87', # The address of one or more Kafka brokers
+    'bootstrap.servers': "89.114.83.106:85, 89.114.83.106:86, 89.114.83.106:87", # The address of one or more Kafka brokers
     'client.id': 'python-producer' # An identifier for the client
 }
 
