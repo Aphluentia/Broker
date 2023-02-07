@@ -3,13 +3,12 @@ from ast import literal_eval
 from datetime import datetime
 from typing import List, Optional
 
-import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 
 
-from producer import KafkaException, KafkaProducer
+from app.producer import KafkaException, KafkaProducer
 from confluent_kafka.admin import AdminClient, NewTopic
-from models import ApiLog, HeartBeat, PairResponse
+from app.models import ApiLog, HeartBeat, PairResponse
 
 app = FastAPI(
     title="CommunicationAPI",
@@ -282,6 +281,5 @@ async def broker_topic_clear(request: Request):
 
 ############################################################################
 # Main #####################################################################
-if __name__ == "__main__":
-    add_log(event="App Startup")
-    uvicorn.run(app, host="0.0.0.0", port=8008)
+
+add_log(event="App Startup")
