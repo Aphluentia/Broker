@@ -1,0 +1,4 @@
+# IGNORE .VS Folder
+/.vs
+/CommunicationAPI/__pycache__
+/CommunicationAPI/logs.txt
