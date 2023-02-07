@@ -178,6 +178,37 @@ async def broker_pair_dc(
         raise HTTPException(status_code=500, detail=ex.args[0].str())
 
 
+@app.get(
+    "/pair/ping/{aphluentiaUserId}/{appType}",
+    tags=["Pair"],
+    response_model=PairResponse,
+)
+async def broker_pair_ping(
+    aphluentiaUserId: str, appType: str, request: Request
+):
+    add_log(
+        event=f"GET: Ping Pairing {aphluentiaUserId} and {appType}",
+        client=request.client,
+    )
+
+    try:
+        cur_time = datetime.now().isoformat()
+        await producer.publish(
+            f"{aphluentiaUserId}_{appType}",
+            "Pairing",
+            f"PING@{cur_time}",
+        )
+
+        return PairResponse(
+            Topic=f"{aphluentiaUserId}_{appType}",
+            WebPlatform=aphluentiaUserId,
+            Application=appType,
+            Action=f"PING@{cur_time}",
+        )
+    except KafkaException as ex:
+        raise HTTPException(status_code=500, detail=ex.args[0].str())
+
+
 ############################################################################
 # Topics ###################################################################
 
