@@ -1,5 +1,6 @@
 from confluent_kafka import Consumer, KafkaError
 
+
 # Define a callback function to handle incoming messages
 def on_message(message):
     if message is None:
@@ -10,13 +11,16 @@ def on_message(message):
         else:
             print(f"Error while consuming message: {message.error()}")
     else:
-        print(f"Received message: key={message.key()}, value={message.value()}")
+        print(
+            f"Received message: key={message.key()}, value={message.value()}"
+        )
+
 
 # Set up the Kafka Consumer to connect to the broker and consume from a topic
 conf = {
     "bootstrap.servers": "89.114.83.106:85, 89.114.83.106:86, 89.114.83.106:87",
     "group.id": "app22",
-    "auto.offset.reset": "earliest"
+    "auto.offset.reset": "earliest",
 }
 
 consumer = Consumer(conf)

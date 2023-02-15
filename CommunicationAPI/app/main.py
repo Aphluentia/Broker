@@ -18,7 +18,10 @@ app = FastAPI(
 
 producer = KafkaProducer("127.0.0.1:8005, 127.0.0.1:8006, 127.0.0.1:8007")
 client = AdminClient(
-    {"bootstrap.servers": "127.0.0.1:8005, 127.0.0.1:8006, 127.0.0.1:8007"}
+    {
+        "bootstrap.servers": "127.0.0.1:8005, \
+        127.0.0.1:8006, 127.0.0.1:8007"
+    }
 )
 
 # Logs #####################################################################
@@ -61,9 +64,13 @@ async def setup(request: Request, conn_type: str = "DEFAULT"):
 
     elif conn_type.upper() == "ETH":
         conn_string = "89.114.83.106:85, 89.114.83.106:86, 89.114.83.106:87"
+    elif conn_type.upper() == "DOCKER":
+        conn_string = "host.docker.internal:29092, \
+            host.docker.internal:29093, host.docker.internal:29094"
 
     producer = KafkaProducer(conn_string)
     client = AdminClient({"bootstrap.servers": conn_string})
+    return conn_string
 
 
 @app.get("/heartbeat", tags=["Base"], response_model=HeartBeat)
