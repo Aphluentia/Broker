@@ -16,9 +16,12 @@ class ApiLog(BaseModel):
     client: Optional[str] = None
 
 
-
 class CommsObject(BaseModel):
     Topic: str
-    WebPlatform: str
-    Application: str
     Action: str
+    Message: Optional[str] = None
+
+
+class PairRequest(BaseModel):
+    WebPlatformId: str
+    ApplicationType: str

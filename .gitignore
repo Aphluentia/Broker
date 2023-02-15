@@ -2,3 +2,4 @@
 /.vs
 /CommunicationAPI/__pycache__
 /CommunicationAPI/logs.txt
+*.pyc
