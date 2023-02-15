@@ -2,6 +2,9 @@
 fastapi[all]
 uvicorn[standard]
 
+# Kafka
+confluent_kafka
+
 # Linting and Formatting 
 black
 flake8

@@ -3,12 +3,11 @@ from ast import literal_eval
 from datetime import datetime
 from typing import List, Optional
 
+from confluent_kafka.admin import AdminClient, NewTopic
 from fastapi import FastAPI, HTTPException, Request
 
-
+from app.models import ApiLog, CommsObject, HeartBeat, PairRequest
 from app.producer import KafkaException, KafkaProducer
-from confluent_kafka.admin import AdminClient, NewTopic
-from app.models import ApiLog, HeartBeat, PairResponse
 
 app = FastAPI(
     title="CommunicationAPI",
@@ -16,17 +15,11 @@ app = FastAPI(
         like Notifications and Pairing",
     version="0.0.1",
 )
-producer = KafkaProducer(
-    "192.168.1.211:8005, 192.168.1.211:8006, 192.168.1.211:8007"
-)
-client = AdminClient(
-    {
-        "bootstrap.servers": "192.168.1.211:8005, \
-                                192.168.1.211:8006, \
-                                192.168.1.211:8007"
-    }
-)
 
+producer = KafkaProducer("127.0.0.1:8005, 127.0.0.1:8006, 127.0.0.1:8007")
+client = AdminClient(
+    {"bootstrap.servers": "127.0.0.1:8005, 127.0.0.1:8006, 127.0.0.1:8007"}
+)
 
 # Logs #####################################################################
 LOGS_FILE = "logs.txt"
@@ -52,6 +45,25 @@ def add_log(event: str, client=None, level: Optional[str] = "INFO"):
 
 ############################################################################
 # Base #####################################################################
+
+
+@app.get("/setup", tags=["Base"])
+async def setup(request: Request, conn_type: str = "DEFAULT"):
+    global producer, client
+    add_log(event="GET: Setup", client=request.client)
+    conn_string = ""
+    if conn_type.upper() == "DEFAULT":
+        conn_string = "127.0.0.1:8005, 127.0.0.1:8006, 127.0.0.1:8007"
+    elif conn_type.upper() == "LAN":
+        conn_string = (
+            "192.168.1.211:8005, 192.168.1.211:8006, 192.168.1.211:8007"
+        )
+
+    elif conn_type.upper() == "ETH":
+        conn_string = "89.114.83.106:85, 89.114.83.106:86, 89.114.83.106:87"
+
+    producer = KafkaProducer(conn_string)
+    client = AdminClient({"bootstrap.servers": conn_string})
 
 
 @app.get("/heartbeat", tags=["Base"], response_model=HeartBeat)
@@ -85,125 +97,93 @@ async def logs(request: Request):
         return logs
 
 
+@app.delete("/logs", tags=["Base"])
+async def dev_only_logs(request: Request):
+    add_log(event="DELETE: Logs", client=request.client)
+    with open(LOGS_FILE, "w") as f:
+        f.write("")
+        f.close()
+
+
 ############################################################################
 # Pair #####################################################################
-@app.get(
-    "/pair/{aphluentiaUserId}/{appType}",
-    tags=["Pair"],
-    response_model=PairResponse,
-)
-async def broker_pair(aphluentiaUserId: str, appType: str, request: Request):
+@app.post("/pair", tags=["Pair"], status_code=204)
+async def broker_pair(obj: PairRequest, request: Request):
     add_log(
-        event=f"GET: New Pairing {aphluentiaUserId} and {appType}",
+        event=f"POST: New Pairing \
+            {obj.WebPlatformId} and {obj.ApplicationType}",
         client=request.client,
     )
+    if (
+        f"{obj.WebPlatformId}_{obj.ApplicationType}"
+        in client.list_topics().topics
+    ):
+        raise HTTPException(status_code=404, detail="Pairing Already Exists")
 
     try:
         client.create_topics(
-            new_topics=[NewTopic(f"{aphluentiaUserId}_{appType}", 3, 2)]
+            new_topics=[
+                NewTopic(f"{obj.WebPlatformId}_{obj.ApplicationType}", 3, 2)
+            ]
         )
-        await producer.publish(
-            f"{aphluentiaUserId}_{appType}",
+        producer.publish(
+            f"{obj.WebPlatformId}_{obj.ApplicationType}",
             "Pairing",
             "NEW",
         )
-        return PairResponse(
-            Topic=f"{aphluentiaUserId}_{appType}",
-            WebPlatform=aphluentiaUserId,
-            Application=appType,
-            Action="NEW",
+        return PairRequest(
+            WebPlatformId=obj.WebPlatformId,
+            ApplicationType=obj.ApplicationType,
         )
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
 
 
-@app.get(
-    "/pair/accept/{aphluentiaUserId}/{appType}",
-    tags=["Pair"],
-    response_model=PairResponse,
-)
-async def broker_pair_accept(
-    aphluentiaUserId: str, appType: str, request: Request
-):
+@app.get("/pair/accept", tags=["Pair"], response_model=PairRequest)
+async def accept_pairing(webPlatform: str, appType: str, request: Request):
     add_log(
-        event=f"GET: Accept Pairing {aphluentiaUserId} and {appType}",
+        event=f"GET: Accept Pairing {webPlatform} and {appType}",
         client=request.client,
     )
+    if f"{webPlatform}_{appType}" not in client.list_topics().topics:
+        raise HTTPException(status_code=404, detail="Pairing Does Not Exist")
 
     try:
         await producer.publish(
-            f"{aphluentiaUserId}_{appType}",
+            f"{webPlatform}_{appType}",
             "Pairing",
             "ACCEPT",
         )
-        return PairResponse(
-            Topic=f"{aphluentiaUserId}_{appType}",
-            WebPlatform=aphluentiaUserId,
-            Application=appType,
-            Action="ACCEPT",
+        return PairRequest(
+            WebPlatformId=webPlatform,
+            ApplicationType=appType,
         )
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
 
 
 @app.get(
-    "/pair/disconnect/{aphluentiaUserId}/{appType}",
+    "/pair/disconnect",
     tags=["Pair"],
-    response_model=PairResponse,
+    response_model=PairRequest,
 )
-async def broker_pair_dc(
-    aphluentiaUserId: str, appType: str, request: Request
-):
+async def disconnect_pairing(webPlatform: str, appType: str, request: Request):
     add_log(
-        event=f"GET: Disconnect Pairing {aphluentiaUserId} and {appType}",
+        event=f"GET: Disconnect Pairing {webPlatform} and {appType}",
         client=request.client,
     )
 
+    if f"{webPlatform}_{appType}" not in client.list_topics().topics:
+        raise HTTPException(status_code=404, detail="Pairing Does Not Exist")
     try:
-        await producer.publish(
-            f"{aphluentiaUserId}_{appType}",
+        producer.publish(
+            f"{webPlatform}_{appType}",
             "Pairing",
             "DISCONNECT",
         )
-        client.delete_topics([f"{aphluentiaUserId}_{appType}"])
+        client.delete_topics([f"{webPlatform}_{appType}"])
 
-        return PairResponse(
-            Topic=f"{aphluentiaUserId}_{appType}",
-            WebPlatform=aphluentiaUserId,
-            Application=appType,
-            Action="DISCONNECT",
-        )
-    except KafkaException as ex:
-        raise HTTPException(status_code=500, detail=ex.args[0].str())
-
-
-@app.get(
-    "/pair/ping/{aphluentiaUserId}/{appType}",
-    tags=["Pair"],
-    response_model=PairResponse,
-)
-async def broker_pair_ping(
-    aphluentiaUserId: str, appType: str, request: Request
-):
-    add_log(
-        event=f"GET: Ping Pairing {aphluentiaUserId} and {appType}",
-        client=request.client,
-    )
-
-    try:
-        cur_time = datetime.now().isoformat()
-        await producer.publish(
-            f"{aphluentiaUserId}_{appType}",
-            "Pairing",
-            f"PING@{cur_time}",
-        )
-
-        return PairResponse(
-            Topic=f"{aphluentiaUserId}_{appType}",
-            WebPlatform=aphluentiaUserId,
-            Application=appType,
-            Action=f"PING@{cur_time}",
-        )
+        return PairRequest(WebPlatformId=webPlatform, ApplicationType=appType)
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
 
@@ -226,40 +206,85 @@ async def get_topics(request: Request):
         raise HTTPException(status_code=500, detail=ex.args[0].str())
 
 
-@app.get("/topics/{aphluentiaUserId}/{appType}", tags=["Topics"])
-async def get_topics_by_id(
-    aphluentiaUserId: str, appType: str, request: Request
-):
+@app.post("/topics", tags=["Topics"], status_code=204)
+async def post_message(message: CommsObject, request: Request):
     add_log(
-        event=f"GET: Broker Topic {aphluentiaUserId}_{appType}",
+        event=f"POST: Posted Message to topic {message.Topic}",
         client=request.client,
     )
+    if message.Topic not in client.list_topics().topics:
+        raise HTTPException(status_code=404, detail="Topic Does Not Exist")
 
     try:
-        topics = client.list_topics().topics[f"{aphluentiaUserId}_{appType}"]
+        await producer.publish(
+            message.Topic,
+            message.Action,
+            message.Message,
+        )
+
+    except KafkaException as ex:
+        raise HTTPException(status_code=500, detail=ex.args[0].str())
+
+
+@app.get("/topics/{topic}", tags=["Topics"])
+async def get_topics_by_id(topic: str, request: Request):
+    add_log(
+        event=f"GET: Broker Topic {topic}",
+        client=request.client,
+    )
+    if f"{topic}" not in client.list_topics().topics:
+        raise HTTPException(status_code=404, detail="Topic Does Not Exist")
+
+    try:
+        topics = client.list_topics().topics[topic]
         return topics
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
     except KeyError:
         raise HTTPException(
             status_code=404,
-            detail=f"Topic {aphluentiaUserId}_{appType} does not exist",
+            detail=f"Topic {topic} does not exist",
         )
 
 
-@app.delete(
-    "/topics/{aphluentiaUserId}/{appType}", tags=["Topics"], status_code=204
+@app.get(
+    "/topics/ping/{topic}",
+    tags=["Topics"],
+    response_model=CommsObject,
 )
-async def broker_pair_delete(
-    aphluentiaUserId: str, appType: str, request: Request
-):
+async def broker_pair_ping(topic: str, request: Request):
     add_log(
-        event=f"DELETE: Delete Topic {aphluentiaUserId}_{appType}",
+        event=f"GET: Ping Topic {topic}",
         client=request.client,
     )
 
+    if f"{topic}" not in client.list_topics().topics:
+        raise HTTPException(status_code=404, detail="Topic Does Not Exist")
+
     try:
-        client.delete_topics([f"{aphluentiaUserId}_{appType}"])
+        cur_time = datetime.now().isoformat()
+        await producer.publish(
+            topic,
+            "Ping",
+            f"{cur_time}",
+        )
+
+        return CommsObject(Topic=topic, Action="PING", Message=f"{cur_time}")
+    except KafkaException as ex:
+        raise HTTPException(status_code=500, detail=ex.args[0].str())
+
+
+@app.delete("/topics/{topic}", tags=["Topics"], status_code=204)
+async def broker_pair_delete(topic: str, request: Request):
+    add_log(
+        event=f"DELETE: Delete Topic {topic}",
+        client=request.client,
+    )
+    if f"{topic}" not in client.list_topics().topics:
+        raise HTTPException(status_code=404, detail="Topic Does Not Exist")
+
+    try:
+        client.delete_topics([topic])
         return {}
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
