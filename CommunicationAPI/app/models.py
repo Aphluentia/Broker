@@ -16,7 +16,8 @@ class ApiLog(BaseModel):
     client: Optional[str] = None
 
 
-class PairResponse(BaseModel):
+
+class CommsObject(BaseModel):
     Topic: str
     WebPlatform: str
     Application: str

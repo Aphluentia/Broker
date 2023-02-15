@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, Request
 
 from app.producer import KafkaException, KafkaProducer
 from confluent_kafka.admin import AdminClient, NewTopic
-from app.models import ApiLog, HeartBeat, PairResponse
+from app.models import ApiLog, HeartBeat, CommsObject
 
 app = FastAPI(
     title="CommunicationAPI",
@@ -16,17 +16,8 @@ app = FastAPI(
         like Notifications and Pairing",
     version="0.0.1",
 )
-producer = KafkaProducer(
-    "192.168.1.211:8005, 192.168.1.211:8006, 192.168.1.211:8007"
-)
-client = AdminClient(
-    {
-        "bootstrap.servers": "192.168.1.211:8005, \
-                                192.168.1.211:8006, \
-                                192.168.1.211:8007"
-    }
-)
-
+producer = None
+client = None
 
 # Logs #####################################################################
 LOGS_FILE = "logs.txt"
@@ -52,6 +43,24 @@ def add_log(event: str, client=None, level: Optional[str] = "INFO"):
 
 ############################################################################
 # Base #####################################################################
+
+
+@app.get("/setup", tags=["Base"])
+async def setup(request: Request, conn_type: str = "DEFAULT"):
+    global producer, client
+    add_log(event="GET: Setup", client=request.client)
+    conn_string = ""
+    if conn_type.upper() == "DEFAULT":
+        conn_string = "127.0.0.1:8005, 127.0.0.1:8006, 127.0.0.1:8007"
+    elif conn_type.upper() == "LAN":
+        conn_string = (
+            "192.168.1.211:8005, 192.168.1.211:8006, 192.168.1.211:8007"
+        )
+    elif conn_type.upper() == "ETH":
+        conn_string = "89.114.83.106:85, 89.114.83.106:86, 89.114.83.106:87"
+
+    producer = KafkaProducer(conn_string)
+    client = AdminClient({"bootstrap.servers": conn_string})
 
 
 @app.get("/heartbeat", tags=["Base"], response_model=HeartBeat)
@@ -87,31 +96,25 @@ async def logs(request: Request):
 
 ############################################################################
 # Pair #####################################################################
-@app.get(
-    "/pair/{aphluentiaUserId}/{appType}",
+@app.post(
+    "/pair",
     tags=["Pair"],
-    response_model=PairResponse,
+    status_code=204
 )
-async def broker_pair(aphluentiaUserId: str, appType: str, request: Request):
+async def broker_pair(obj: CommsObject, request: Request):
     add_log(
-        event=f"GET: New Pairing {aphluentiaUserId} and {appType}",
+        event=f"POST: New Pairing {obj.WebPlatform} and {obj.Application}",
         client=request.client,
     )
 
     try:
         client.create_topics(
-            new_topics=[NewTopic(f"{aphluentiaUserId}_{appType}", 3, 2)]
+            new_topics=[NewTopic(f"{obj.WebPlatform}_{obj.Application}", 3, 2)]
         )
         await producer.publish(
-            f"{aphluentiaUserId}_{appType}",
+            f"{obj.WebPlatform}_{obj.Application}",
             "Pairing",
             "NEW",
-        )
-        return PairResponse(
-            Topic=f"{aphluentiaUserId}_{appType}",
-            WebPlatform=aphluentiaUserId,
-            Application=appType,
-            Action="NEW",
         )
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
@@ -120,7 +123,7 @@ async def broker_pair(aphluentiaUserId: str, appType: str, request: Request):
 @app.get(
     "/pair/accept/{aphluentiaUserId}/{appType}",
     tags=["Pair"],
-    response_model=PairResponse,
+    response_model=CommsObject,
 )
 async def broker_pair_accept(
     aphluentiaUserId: str, appType: str, request: Request
@@ -136,7 +139,7 @@ async def broker_pair_accept(
             "Pairing",
             "ACCEPT",
         )
-        return PairResponse(
+        return CommsObject(
             Topic=f"{aphluentiaUserId}_{appType}",
             WebPlatform=aphluentiaUserId,
             Application=appType,
@@ -149,7 +152,7 @@ async def broker_pair_accept(
 @app.get(
     "/pair/disconnect/{aphluentiaUserId}/{appType}",
     tags=["Pair"],
-    response_model=PairResponse,
+    response_model=CommsObject,
 )
 async def broker_pair_dc(
     aphluentiaUserId: str, appType: str, request: Request
@@ -180,7 +183,7 @@ async def broker_pair_dc(
 @app.get(
     "/pair/ping/{aphluentiaUserId}/{appType}",
     tags=["Pair"],
-    response_model=PairResponse,
+    response_model=CommsObject,
 )
 async def broker_pair_ping(
     aphluentiaUserId: str, appType: str, request: Request
