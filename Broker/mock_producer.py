@@ -2,7 +2,7 @@ from confluent_kafka import Producer
 
 # Define the configuration options for the Kafka producer
 conf = {
-    "bootstrap.servers": "89.114.83.106:85, 89.114.83.106:86, 89.114.83.106:87",  # The address of one or more Kafka brokers
+    "bootstrap.servers": "192.168.1.211:8005, 192.168.1.211:8006, 192.168.1.211:8007",  # The address of one or more Kafka brokers
     "client.id": "python-producer",  # An identifier for the client
 }
 
@@ -10,7 +10,7 @@ conf = {
 producer = Producer(conf)
 
 # Define the topic and message to be produced
-topic = "my_topic"
+topic = "KAFKA_BROKER"
 value = "Hello, Kafka!"
 
 # Send the message to the Kafka broker

@@ -1,5 +1,5 @@
 from typing import Optional
-
+import time
 from pydantic import BaseModel
 
 
@@ -17,8 +17,10 @@ class ApiLog(BaseModel):
 
 
 class CommsObject(BaseModel):
-    Topic: str
+    WebPlatformId: str
+    ApplicationType: str
     Action: str
+    Timestamp: Optional[float] = time.time()
     Message: Optional[str] = None
 
 

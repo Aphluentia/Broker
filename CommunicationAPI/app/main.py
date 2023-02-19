@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException, Request
 
 from app.models import ApiLog, CommsObject, HeartBeat, PairRequest
 from app.producer import KafkaException, KafkaProducer
+from fastapi.encoders import jsonable_encoder
 
 app = FastAPI(
     title="CommunicationAPI",
@@ -15,7 +16,7 @@ app = FastAPI(
         like Notifications and Pairing",
     version="0.0.1",
 )
-
+TOPIC = "kafkabroker"
 producer = KafkaProducer("127.0.0.1:8005, 127.0.0.1:8006, 127.0.0.1:8007")
 client = AdminClient(
     {
@@ -114,36 +115,27 @@ async def dev_only_logs(request: Request):
 
 ############################################################################
 # Pair #####################################################################
-@app.post("/pair", tags=["Pair"], status_code=204)
+@app.post("/pair", tags=["Pair"], status_code=201)
 async def broker_pair(obj: PairRequest, request: Request):
     add_log(
         event=f"POST: New Pairing \
             {obj.WebPlatformId} and {obj.ApplicationType}",
         client=request.client,
     )
-    if (
-        f"{obj.WebPlatformId}_{obj.ApplicationType}"
-        in client.list_topics().topics
-    ):
-        raise HTTPException(status_code=404, detail="Pairing Already Exists")
-
     try:
-        client.create_topics(
-            new_topics=[
-                NewTopic(f"{obj.WebPlatformId}_{obj.ApplicationType}", 3, 2)
-            ]
-        )
-        producer.publish(
-            f"{obj.WebPlatformId}_{obj.ApplicationType}",
+        message_value = CommsObject(
+                WebPlatformId=obj.WebPlatformId,
+                ApplicationType=obj.ApplicationType,
+                Action = "NEW_PAIRING"
+            ).__dict__
+        await producer.publish(
+            TOPIC,
             "Pairing",
-            "NEW",
+            value = str(message_value)
         )
-        return PairRequest(
-            WebPlatformId=obj.WebPlatformId,
-            ApplicationType=obj.ApplicationType,
-        )
+        return message_value
     except KafkaException as ex:
-        raise HTTPException(status_code=500, detail=ex.args[0].str())
+        return HTTPException(status_code=500, detail=ex.args[0].str())
 
 
 @app.get("/pair/accept", tags=["Pair"], response_model=PairRequest)
@@ -157,16 +149,20 @@ async def accept_pairing(webPlatform: str, appType: str, request: Request):
 
     try:
         await producer.publish(
-            f"{webPlatform}_{appType}",
+            TOPIC,
             "Pairing",
-            "ACCEPT",
+            CommsObject(
+                WebPlatformId=webPlatform,
+                ApplicationType=appType,
+                Action = "ACCEPT_PAIRING",
+            )
         )
         return PairRequest(
             WebPlatformId=webPlatform,
             ApplicationType=appType,
         )
     except KafkaException as ex:
-        raise HTTPException(status_code=500, detail=ex.args[0].str())
+        return HTTPException(status_code=500, detail=ex.args[0].str())
 
 
 @app.get(
@@ -179,21 +175,61 @@ async def disconnect_pairing(webPlatform: str, appType: str, request: Request):
         event=f"GET: Disconnect Pairing {webPlatform} and {appType}",
         client=request.client,
     )
-
-    if f"{webPlatform}_{appType}" not in client.list_topics().topics:
-        raise HTTPException(status_code=404, detail="Pairing Does Not Exist")
     try:
         producer.publish(
-            f"{webPlatform}_{appType}",
-            "Pairing",
-            "DISCONNECT",
+            CommsObject(
+                WebPlatformId=webPlatform,
+                ApplicationType=appType,
+                Action = "DISCONNECT_PAIRING",
+            )
         )
-        client.delete_topics([f"{webPlatform}_{appType}"])
-
         return PairRequest(WebPlatformId=webPlatform, ApplicationType=appType)
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
 
+@app.get(
+    "/pair/ping",
+    tags=["Pair"],
+    response_model=PairRequest,
+)
+async def ping_pairing(webPlatform: str, appType: str, request: Request):
+    add_log(
+        event=f"GET: Pinging Pairing {webPlatform} and {appType}",
+        client=request.client,
+    )
+    try:
+        producer.publish(
+            CommsObject(
+                WebPlatformId=webPlatform,
+                ApplicationType=appType,
+                Action = "PING_PAIRING",
+            )
+        )
+        return PairRequest(WebPlatformId=webPlatform, ApplicationType=appType)
+    except KafkaException as ex:
+        raise HTTPException(status_code=500, detail=ex.args[0].str())
+
+@app.get(
+    "/pair/update",
+    tags=["Pair"],
+    response_model=PairRequest,
+)
+async def update_pairing(webPlatform: str, appType: str, request: Request):
+    add_log(
+        event=f"GET: Pinging Pairing {webPlatform} and {appType}",
+        client=request.client,
+    )
+    try:
+        producer.publish(
+            CommsObject(
+                WebPlatformId=webPlatform,
+                ApplicationType=appType,
+                Action = "UPDATE_PAIRING",
+            )
+        )
+        return PairRequest(WebPlatformId=webPlatform, ApplicationType=appType)
+    except KafkaException as ex:
+        raise HTTPException(status_code=500, detail=ex.args[0].str())
 
 ############################################################################
 # Topics ###################################################################
@@ -213,24 +249,7 @@ async def get_topics(request: Request):
         raise HTTPException(status_code=500, detail=ex.args[0].str())
 
 
-@app.post("/topics", tags=["Topics"], status_code=204)
-async def post_message(message: CommsObject, request: Request):
-    add_log(
-        event=f"POST: Posted Message to topic {message.Topic}",
-        client=request.client,
-    )
-    if message.Topic not in client.list_topics().topics:
-        raise HTTPException(status_code=404, detail="Topic Does Not Exist")
 
-    try:
-        await producer.publish(
-            message.Topic,
-            message.Action,
-            message.Message,
-        )
-
-    except KafkaException as ex:
-        raise HTTPException(status_code=500, detail=ex.args[0].str())
 
 
 @app.get("/topics/{topic}", tags=["Topics"])
@@ -252,33 +271,6 @@ async def get_topics_by_id(topic: str, request: Request):
             status_code=404,
             detail=f"Topic {topic} does not exist",
         )
-
-
-@app.get(
-    "/topics/ping/{topic}",
-    tags=["Topics"],
-    response_model=CommsObject,
-)
-async def broker_pair_ping(topic: str, request: Request):
-    add_log(
-        event=f"GET: Ping Topic {topic}",
-        client=request.client,
-    )
-
-    if f"{topic}" not in client.list_topics().topics:
-        raise HTTPException(status_code=404, detail="Topic Does Not Exist")
-
-    try:
-        cur_time = datetime.now().isoformat()
-        await producer.publish(
-            topic,
-            "Ping",
-            f"{cur_time}",
-        )
-
-        return CommsObject(Topic=topic, Action="PING", Message=f"{cur_time}")
-    except KafkaException as ex:
-        raise HTTPException(status_code=500, detail=ex.args[0].str())
 
 
 @app.delete("/topics/{topic}", tags=["Topics"], status_code=204)

@@ -34,10 +34,11 @@ class KafkaProducer:
                     result.set_exception, KafkaException(err)
                 )
             else:
+                print(err, msg)
                 self._loop.call_soon_threadsafe(result.set_result, msg)
 
         self.producer.produce(
             topic, key=key, value=value.encode("utf-8"), on_delivery=ack
         )
-        self.producer.flush()
-        return result
+        
+        return topic, value
