@@ -40,5 +40,5 @@ class KafkaProducer:
         self.producer.produce(
             topic, key=key, value=value.encode("utf-8"), on_delivery=ack
         )
-        
+
         return topic, value

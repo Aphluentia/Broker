@@ -3,12 +3,11 @@ from ast import literal_eval
 from datetime import datetime
 from typing import List, Optional
 
-from confluent_kafka.admin import AdminClient, NewTopic
+from confluent_kafka.admin import AdminClient
 from fastapi import FastAPI, HTTPException, Request
 
 from app.models import ApiLog, CommsObject, HeartBeat, PairRequest
 from app.producer import KafkaException, KafkaProducer
-from fastapi.encoders import jsonable_encoder
 
 app = FastAPI(
     title="CommunicationAPI",
@@ -17,13 +16,8 @@ app = FastAPI(
     version="0.0.1",
 )
 TOPIC = "kafkabroker"
-producer = KafkaProducer("127.0.0.1:8005, 127.0.0.1:8006, 127.0.0.1:8007")
-client = AdminClient(
-    {
-        "bootstrap.servers": "127.0.0.1:8005, \
-        127.0.0.1:8006, 127.0.0.1:8007"
-    }
-)
+producer = None
+client = None
 
 # Logs #####################################################################
 LOGS_FILE = "logs.txt"
@@ -48,30 +42,36 @@ def add_log(event: str, client=None, level: Optional[str] = "INFO"):
 
 
 ############################################################################
+# Environment ##############################################################
+def env_setup(conn_type: str):
+    global producer, client
+    conn_string = ""
+    LAN_CONN = "192.168.1.211"
+    ETH_CONN = "89.114.83.106"
+    DOCKER = "host.docker.internal"
+    if conn_type.upper() == "DEFAULT":
+        conn_string = "127.0.0.1:8095, 127.0.0.1:8096, 127.0.0.1:8097"
+    elif conn_type.upper() == "LAN":
+        conn_string = f"{LAN_CONN}:29092,\
+            {LAN_CONN}:29093,{LAN_CONN}:29094"
+    elif conn_type.upper() == "ETH":
+        conn_string = f"{ETH_CONN}:85,{ETH_CONN}:86,{ETH_CONN}:87"
+    elif conn_type.upper() == "DOCKER":
+        conn_string = f"{DOCKER}:9092,{DOCKER}:9093, {DOCKER}:9094"
+
+    producer = KafkaProducer(conn_string)
+    client = AdminClient({"bootstrap.servers": conn_string})
+    return conn_string
+
+
+############################################################################
 # Base #####################################################################
 
 
 @app.get("/setup", tags=["Base"])
 async def setup(request: Request, conn_type: str = "DEFAULT"):
-    global producer, client
     add_log(event="GET: Setup", client=request.client)
-    conn_string = ""
-    if conn_type.upper() == "DEFAULT":
-        conn_string = "127.0.0.1:8005, 127.0.0.1:8006, 127.0.0.1:8007"
-    elif conn_type.upper() == "LAN":
-        conn_string = (
-            "192.168.1.211:8005, 192.168.1.211:8006, 192.168.1.211:8007"
-        )
-
-    elif conn_type.upper() == "ETH":
-        conn_string = "89.114.83.106:85, 89.114.83.106:86, 89.114.83.106:87"
-    elif conn_type.upper() == "DOCKER":
-        conn_string = "host.docker.internal:29092, \
-            host.docker.internal:29093, host.docker.internal:29094"
-
-    producer = KafkaProducer(conn_string)
-    client = AdminClient({"bootstrap.servers": conn_string})
-    return conn_string
+    return env_setup(conn_type)
 
 
 @app.get("/heartbeat", tags=["Base"], response_model=HeartBeat)
@@ -124,15 +124,11 @@ async def broker_pair(obj: PairRequest, request: Request):
     )
     try:
         message_value = CommsObject(
-                WebPlatformId=obj.WebPlatformId,
-                ApplicationType=obj.ApplicationType,
-                Action = "NEW_PAIRING"
-            ).__dict__
-        await producer.publish(
-            TOPIC,
-            "Pairing",
-            value = str(message_value)
-        )
+            WebPlatformId=obj.WebPlatformId,
+            ApplicationType=obj.ApplicationType,
+            Action="NEW_PAIRING",
+        ).__dict__
+        await producer.publish(TOPIC, "Pairing", value=str(message_value))
         return message_value
     except KafkaException as ex:
         return HTTPException(status_code=500, detail=ex.args[0].str())
@@ -154,8 +150,8 @@ async def accept_pairing(webPlatform: str, appType: str, request: Request):
             CommsObject(
                 WebPlatformId=webPlatform,
                 ApplicationType=appType,
-                Action = "ACCEPT_PAIRING",
-            )
+                Action="ACCEPT_PAIRING",
+            ),
         )
         return PairRequest(
             WebPlatformId=webPlatform,
@@ -180,12 +176,13 @@ async def disconnect_pairing(webPlatform: str, appType: str, request: Request):
             CommsObject(
                 WebPlatformId=webPlatform,
                 ApplicationType=appType,
-                Action = "DISCONNECT_PAIRING",
+                Action="DISCONNECT_PAIRING",
             )
         )
         return PairRequest(WebPlatformId=webPlatform, ApplicationType=appType)
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
+
 
 @app.get(
     "/pair/ping",
@@ -202,12 +199,13 @@ async def ping_pairing(webPlatform: str, appType: str, request: Request):
             CommsObject(
                 WebPlatformId=webPlatform,
                 ApplicationType=appType,
-                Action = "PING_PAIRING",
+                Action="PING_PAIRING",
             )
         )
         return PairRequest(WebPlatformId=webPlatform, ApplicationType=appType)
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
+
 
 @app.get(
     "/pair/update",
@@ -224,12 +222,13 @@ async def update_pairing(webPlatform: str, appType: str, request: Request):
             CommsObject(
                 WebPlatformId=webPlatform,
                 ApplicationType=appType,
-                Action = "UPDATE_PAIRING",
+                Action="UPDATE_PAIRING",
             )
         )
         return PairRequest(WebPlatformId=webPlatform, ApplicationType=appType)
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
+
 
 ############################################################################
 # Topics ###################################################################
@@ -247,9 +246,6 @@ async def get_topics(request: Request):
         return topics
     except KafkaException as ex:
         raise HTTPException(status_code=500, detail=ex.args[0].str())
-
-
-
 
 
 @app.get("/topics/{topic}", tags=["Topics"])
