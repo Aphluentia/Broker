@@ -77,10 +77,14 @@ async def setup(request: Request, conn_type: str = "DEFAULT"):
 @app.get("/heartbeat", tags=["Base"], response_model=HeartBeat)
 async def heartbeat(request: Request):
     add_log(event="GET: Heartbeat", client=request.client)
-    topics = client.list_topics().topics
+    topics = None
+    print(client)
+    if client:
+        topics = client.list_topics().topics
+
     broker_status = "Alive"
     if not topics:
-        broker_status = "Dead"
+        broker_status = "Brand New Cluster"
     return HeartBeat(
         api_status="Alive",
         broker_status=broker_status,
@@ -140,8 +144,6 @@ async def accept_pairing(webPlatform: str, appType: str, request: Request):
         event=f"GET: Accept Pairing {webPlatform} and {appType}",
         client=request.client,
     )
-    if f"{webPlatform}_{appType}" not in client.list_topics().topics:
-        raise HTTPException(status_code=404, detail="Pairing Does Not Exist")
 
     try:
         await producer.publish(
@@ -212,9 +214,9 @@ async def ping_pairing(webPlatform: str, appType: str, request: Request):
     tags=["Pair"],
     response_model=PairRequest,
 )
-async def update_pairing(webPlatform: str, appType: str, request: Request):
+async def update_pairing(webPlatform: str, appType: str, section: str ,request: Request):
     add_log(
-        event=f"GET: Pinging Pairing {webPlatform} and {appType}",
+        event=f"GET: Updating Pairing {webPlatform} and {appType}",
         client=request.client,
     )
     try:
@@ -223,6 +225,7 @@ async def update_pairing(webPlatform: str, appType: str, request: Request):
                 WebPlatformId=webPlatform,
                 ApplicationType=appType,
                 Action="UPDATE_PAIRING",
+                Message=f"SECTION:{section}"
             )
         )
         return PairRequest(WebPlatformId=webPlatform, ApplicationType=appType)
