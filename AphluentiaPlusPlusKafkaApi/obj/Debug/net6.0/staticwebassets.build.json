@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "9sXKxE6hWCA2DgDIXAybdr3I74V74EZHOENzcLJc5WM=",
+  "Source": "AphluentiaPlusPlusKafkaApi",
+  "BasePath": "_content/AphluentiaPlusPlusKafkaApi",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

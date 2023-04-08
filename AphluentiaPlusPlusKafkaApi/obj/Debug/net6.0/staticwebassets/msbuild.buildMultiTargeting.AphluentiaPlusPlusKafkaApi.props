@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\AphluentiaPlusPlusKafkaApi.props" />
+</Project>
