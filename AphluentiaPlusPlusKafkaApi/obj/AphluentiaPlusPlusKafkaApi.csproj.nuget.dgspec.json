@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\E1493\\source\\repos\\Aphluentia\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj": {}
+    "H:\\Github\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\E1493\\source\\repos\\Aphluentia\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj": {
+    "H:\\Github\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\E1493\\source\\repos\\Aphluentia\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj",
+        "projectUniqueName": "H:\\Github\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj",
         "projectName": "AphluentiaPlusPlusKafkaApi",
-        "projectPath": "C:\\Users\\E1493\\source\\repos\\Aphluentia\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj",
-        "packagesPath": "C:\\Users\\E1493\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\E1493\\source\\repos\\Aphluentia\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\obj\\",
+        "projectPath": "H:\\Github\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj",
+        "packagesPath": "C:\\Users\\pedro\\.nuget\\packages\\",
+        "outputPath": "H:\\Github\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\E1493\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\pedro\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -76,7 +76,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.102\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
         }
       }
     }
