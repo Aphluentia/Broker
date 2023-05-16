@@ -1,27 +1,30 @@
 {
   "format": 1,
   "restore": {
-    "H:\\Github\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj": {}
+    "C:\\Users\\E1493\\source\\repos\\Aphluentia\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj": {}
   },
   "projects": {
-    "H:\\Github\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj": {
+    "C:\\Users\\E1493\\source\\repos\\Aphluentia\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "H:\\Github\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj",
+        "projectUniqueName": "C:\\Users\\E1493\\source\\repos\\Aphluentia\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj",
         "projectName": "AphluentiaPlusPlusKafkaApi",
-        "projectPath": "H:\\Github\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj",
-        "packagesPath": "C:\\Users\\pedro\\.nuget\\packages\\",
-        "outputPath": "H:\\Github\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\obj\\",
+        "projectPath": "C:\\Users\\E1493\\source\\repos\\Aphluentia\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\AphluentiaPlusPlusKafkaApi.csproj",
+        "packagesPath": "C:\\Users\\E1493\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\E1493\\source\\repos\\Aphluentia\\CommunicationModule\\AphluentiaPlusPlusKafkaApi\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\pedro\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\E1493\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -76,7 +79,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
         }
       }
     }
