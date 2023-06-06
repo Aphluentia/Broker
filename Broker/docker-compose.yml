@@ -52,10 +52,7 @@ services:
       - zoo2
       - zoo3
     ports:
-    
-      - "8005:8005"  
       - "8095:8095"     # Map the Kafka port to port 8005 on the Docker host   
-      - "29092:29092"     # Map the Kafka port to port 8005 on the Docker host
       - "9092:9092"
 
     environment:
@@ -75,9 +72,7 @@ services:
       - zoo2
       - zoo3
     ports:
-      - "8006:8006"     # Map the Kafka port to port 8006 on the Docker host
       - "8096:8096"     # Map the Kafka port to port 8005 on the Docker host
-      - "29093:29093"     # Map the Kafka port to port 8005 on the Docker host
       - "9093:9093"
     environment:
       KAFKA_BROKER_ID: 2
@@ -97,9 +92,7 @@ services:
       - zoo2
       - zoo3
     ports:
-      - "8007:8007"     # Map the Kafka port to port 8007 on the Docker host
       - "8097:8097"     # Map the Kafka port to port 8005 on the Docker host
-      - "29094:29094"     # Map the Kafka port to port 8005 on the Docker host
       - "9094:9094"
     environment:
       KAFKA_BROKER_ID: 3
