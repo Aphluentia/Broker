@@ -93,7 +93,7 @@ services:
       - zoo3
     ports:
       - "8097:8097"     # Map the Kafka port to port 8005 on the Docker host
-      - "9094:9094"
+      - "9097:9097"
     environment:
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181,zoo2:2181,zoo3:2181"
