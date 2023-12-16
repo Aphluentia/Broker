@@ -1,0 +1,106 @@
+version: '3'
+
+services:
+  zoo1:
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zoo1
+    container_name: zoo1
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2178  # Unique port for zoo1
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: "zoo1:2888:3888;zoo2:2888:3888;zoo3:2888:3888"
+    ports:
+      - "2178:2178"  # Map to a unique host port (e.g., 2181)
+
+  zoo2:
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zoo2
+    container_name: zoo2
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: 2179 # Unique port for zoo2
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: "zoo1:2888:3888;zoo2:2888:3888;zoo3:2888:3888"
+    ports:
+      - "2179:2178"  # Map to a unique host port (e.g., 2182)
+
+  zoo3:
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zoo3
+    container_name: zoo3
+    environment:
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_CLIENT_PORT: 2177 # Unique port for zoo3
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: "zoo1:2888:3888;zoo2:2888:3888;zoo3:2888:3888"
+    ports:
+      - "2177:2178"  # Map to a unique host port (e.g., 2183)
+
+# Define Kafka services here...
+
+
+  kafka1:
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka1
+    container_name: kafka1
+    depends_on:
+      - zoo1
+      - zoo2
+      - zoo3
+    ports:
+      - "8095:8095"
+      - "9095:9095"
+
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2179,zoo2:2179,zoo3:2179"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka1:19095,PLAINTEXT_HOST://localhost:8095, DOCKER://host.docker.internal:9095"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT, DOCKER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+  
+  kafka2:
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka2
+    container_name: kafka2
+    depends_on:
+      - zoo1
+      - zoo2
+      - zoo3
+    ports:
+      - "8096:8096"
+      - "9096:9096"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2179,zoo2:2179,zoo3:2179"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka2:19096,PLAINTEXT_HOST://localhost:8096,DOCKER://host.docker.internal:9096"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,DOCKER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+
+
+  kafka3:
+    image: confluentinc/cp-kafka:latest
+    hostname: kafka3
+    container_name: kafka3
+    depends_on:
+      - zoo1
+      - zoo2
+      - zoo3
+    ports:
+      - "8097:8097"     # Map the Kafka port to port 8005 on the Docker host
+      - "9097:9097"
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2179,zoo2:2179,zoo3:2179"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka3:19097,PLAINTEXT_HOST://localhost:8097,DOCKER://host.docker.internal:9097"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,DOCKER:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
